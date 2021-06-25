@@ -1,0 +1,661 @@
+1、定义
+webpack是一个现代javascript应用程序的静态模块打包器；
+2、用途
+webpack处理应用程序时，会分析到你的目录结构，找到javascript模块以及其它的一些浏览器不能直接运行的扩展语言（scss, TypeScript），并将其打包为合适的格式以供浏览器使用
+3、webpack的核心概念
+entry: 入口，提示webpack应该使用哪个模块，来作为构建其内部依赖图的开始，进入入口气垫后，webpack会找出有哪些模块和库是入口起点（直接和间接）依赖
+output:出口，告诉webpack在哪里输出它所创建的结果文件，以及如何命名这些文件，默认值为./dist
+loader:模块转换器，将所有类型的文件转换为webpack能够处理的有效模块
+plugins：扩展插件，在webpack构建流程中的特定时机注入扩展逻辑来改变构建结果或做你想做的事情
+module：模块，开发者将程序分解成离散功能块
+4、webpack打包流程：
+1.1初始化项目：
+（1）创建一个文件夹，使用npm(yarn) init 进行初始化产生一个package.json文件
+（2）安装webpack, webpack-cli全局安装（npm i webpack webpack-cli --save-dev）
+（3）新建一个src文件夹以及public文件夹，新建文件index.js(src)，index.html(public)
+（4）在package.json中配置
+ 
+执行命令npm  run  build，如果生成一个dist文件夹，表示打包成功
+1.2自主配置
+（1）新建文件webpack.config.js文件，进行核心配置（包含入口，输出，mode）
+const path = require('path');
+module.exports = {
+  mode: 'development', // 开发模式
+  // devtool: 'inline-source-map', // 错误代码调试
+  entry: './src/index.js',（path.resolve(__dirname,'../src/index.js')）
+  output: {
+    filename: '[name].[hash:8].js', // 打包后的名称
+    path: path.resolve(__dirname, 'dist') // 打包后的目录
+  },
+}
+以上无法在浏览器中显示 同时你会发现打包好的js文件的名称每次都不一样。webpack打包出来的js文件我们需要引入到html中，但是每次我们都手动修改js文件名显得很麻烦，因此我们需要一个插件来帮我们完成这件事情
+1.3配置html模板
+（1）安装插件html-webpack-plugin，进行插件配置
+const path = require('path');
+const HtmlWebpackPlugin = require('html-webpack-plugin');
+module.exports = {
+   mode:'development', // 开发模式
+   entry: path.resolve(__dirname,'../src/index.js'), // 入口文件
+   output: { filename: '[name].[hash:8].js', // 打包后的文件名称
+   path: path.resolve(__dirname,'../dist') // 打包后的目录
+   },
+   plugins:[
+     new HtmlWebpackPlugin({
+      // 用于生成的HTML文档的标题
+       title: 'Webpack 开发环境配置',
+        // webpack 生成模板的路径
+       // template: './public/index.html'
+       template:path.resolve(__dirname,'../public/index.html')
+     })
+   ]
+}
+（2）npm run build打包之后
+
+1.3.1多入口文件配置
+（1）在public以及src文件中多创建一个入口文件配置如下
+const path = require('path');
+const HtmlWebpackPlugin = require('html-webpack-plugin');
+module.exports = {
+   mode:'development', // 开发模式
+   entry: {
+     main: './src/main.js',
+     header: './src/head.js',
+   },
+   output: { filename: '[name].[hash:8].js', // 打包后的文件名称
+   path: path.resolve(__dirname,'../dist') // 打包后的目录
+   },
+   plugins:[
+     new HtmlWebpackPlugin({
+      // 用于生成的HTML文档的标题
+       title: 'Webpack 开发环境配置',
+        // webpack 生成模板的路径
+       // template: './public/index.html'
+       template:path.resolve(__dirname,'../public/index.html')
+     }),
+     new HTMLWebpackPlugin({
+       title: '多文件入口',
+       template: path.resolve(__dirname, './public/head.html'),
+       chunks:['header'] // 与入口文件对应的模块名
+     }),
+   ]
+}
+
+1.3.2clean-webpack-plugin
+（1） 每次执行npm run build 会发现dist文件夹里会残留上次打包的文件，这里我们推荐一个plugin来帮我们在打包输出前清空文件夹clean-webpack-plugin
+const path = require('path');
+const HtmlWebpackPlugin = require('html-webpack-plugin');
+const {CleanWebpackPlugin} = require('clean-webpack-plugin');
+module.exports = {
+   mode:'development', // 开发模式
+   entry: {
+     main: './src/main.js',
+     header: './src/head.js',
+   },
+   output: { filename: '[name].[hash:8].js', // 打包后的文件名称
+   path: path.resolve(__dirname,'../dist') // 打包后的目录
+   },
+   plugins:[
+     new HtmlWebpackPlugin({
+      // 用于生成的HTML文档的标题
+       title: 'Webpack 开发环境配置',
+        // webpack 生成模板的路径
+       // template: './public/index.html'
+       template:path.resolve(__dirname,'../public/index.html')
+     }),
+     new HTMLWebpackPlugin({
+       title: '多文件入口',
+       template: path.resolve(__dirname, './public/head.html'),
+       chunks:['header'] // 与入口文件对应的模块名
+     }),
+     // 用法：new CleanWebpackPlugin(paths [, {options}])
+     new CleanWebpackPlugin(['dist'])
+   ]
+}
+1.4引用css以及less
+（1）安装css-loader, style-loader, less-loader
+（2）配置
+const path = require('path');
+const HtmlWebpackPlugin = require('html-webpack-plugin');
+const {CleanWebpackPlugin} = require('clean-webpack-plugin');
+module.exports = {
+   mode:'development', // 开发模式
+   entry: {
+     main: './src/main.js',
+     header: './src/head.js',
+   },
+   output: { filename: '[name].[hash:8].js', // 打包后的文件名称
+   path: path.resolve(__dirname,'../dist') // 打包后的目录
+   },
+   plugins:[
+     new HtmlWebpackPlugin({
+      // 用于生成的HTML文档的标题
+       title: 'Webpack 开发环境配置',
+        // webpack 生成模板的路径
+       // template: './public/index.html'
+       template:path.resolve(__dirname,'../public/index.html')
+     }),
+     new HTMLWebpackPlugin({
+       title: '多文件入口',
+       template: path.resolve(__dirname, './public/head.html'),
+       chunks:['header'] // 与入口文件对应的模块名
+     }),
+     // 用法：new CleanWebpackPlugin(paths [, {options}])
+     new CleanWebpackPlugin(['dist'])
+   ],
+module: {
+    rules: [
+      {
+        test: /\.css$/,
+        use: [
+          'style-loader',
+          // 还可以给loader添加一些配置
+          {
+            loader: 'css-loader',
+            options: {
+              // 开启sourceMop
+              sourceMap: true
+            }
+          }
+        ]
+      },
+      // 解析图片
+      {
+        test: /\.(png|svg|jpg|gif)$/,
+        use: [
+          'file-loader'
+        ]
+      },
+      // 解析字体
+      {
+        test: /\.(woff|woff2|eot|ttf|otf)$/,
+        use: [
+            'file-loader'
+        ]
+      },
+      // 解析数据资源
+      {
+        test: /\.(csv|tsv)$/,
+        use: [
+            'csv-loader'
+        ]
+      },
+      {
+        test: /\.less$/,
+        use:['style-loader','css-loader','less-loader'] // 从右向左解析原则
+      },
+      {
+        test: /\.scss$/,
+        use:['style-loader','css-loader','less-loader', 'scss-loader'] // 从右向左解析原则
+      }
+    ]
+  },
+}
+1.4.2css拆分
+（1） webpack 4.0以前，我们通过extract-text-webpack-plugin插件，把css样式从js文件中提取到单独的css文件中。webpack4.0以后，官方推荐使用mini-css-extract-plugin插件来打包css文件
+（2）这里需要说的细一点,上面我们所用到的mini-css-extract-plugin会将所有的css样式合并为一个css文件。如果你想拆分为一一对应的多个css文件,我们需要使用到extract-text-webpack-plugin，而目前mini-css-extract-plugin还不支持此功能。我们需要安装@next版本的extract-text-webpack-plugin
+const path = require('path');
+const HtmlWebpackPlugin = require('html-webpack-plugin');
+const {CleanWebpackPlugin} = require('clean-webpack-plugin');
+// css文件拆分, 从js文件中提取出来
+const MiniCssExtractPlugin = require("mini-css-extract-plugin");
+
+module.exports = {
+   mode:'development', // 开发模式
+   entry: {
+     main: './src/main.js',
+     header: './src/head.js',
+   },
+   output: { filename: '[name].[hash:8].js', // 打包后的文件名称
+   path: path.resolve(__dirname,'../dist') // 打包后的目录
+   },
+   plugins:[
+     new HtmlWebpackPlugin({
+      // 用于生成的HTML文档的标题
+       title: 'Webpack 开发环境配置',
+        // webpack 生成模板的路径
+       // template: './public/index.html'
+       template:path.resolve(__dirname,'../public/index.html')
+     }),
+     new HTMLWebpackPlugin({
+       title: '多文件入口',
+       template: path.resolve(__dirname, './public/head.html'),
+       chunks:['header'] // 与入口文件对应的模块名
+     }),
+     // 用法：new CleanWebpackPlugin(paths [, {options}])
+     new CleanWebpackPlugin(['dist']),
+     new MiniCssExtractPlugin({
+      filename: "[name].[hash].css",
+      chunkFilename: "[id].css",
+     })
+   ],
+module: {
+    rules: [
+      {
+        test: /\.css$/,
+        use: [
+          'style-loader',
+          // 还可以给loader添加一些配置
+          {
+            loader: 'css-loader',
+            options: {
+              // 开启sourceMop
+              sourceMap: true
+            }
+          }
+        ]
+      },
+      // 解析图片
+      {
+        test: /\.(png|svg|jpg|gif)$/,
+        use: [
+          'file-loader'
+        ]
+      },
+      // 解析字体
+      {
+        test: /\.(woff|woff2|eot|ttf|otf)$/,
+        use: [
+            'file-loader'
+        ]
+      },
+      // 解析数据资源
+      {
+        test: /\.(csv|tsv)$/,
+        use: [
+            'csv-loader'
+        ]
+      },
+      {
+        test: /\.less$/,
+        use:['style-loader','css-loader','less-loader'] // 从右向左解析原则
+      },
+      {
+        test: /\.scss$/,
+        use:['style-loader','css-loader','less-loader', 'scss-loader'] // 从右向左解析原则
+      }
+    ]
+  },
+}
+1.5打包图片、字体、媒体等文件
+const path = require('path');
+// 查看html显示的内容
+const HTMLWebpackPlugin = require('html-webpack-plugin');
+// 清理dist文件夹里面的js重复文件
+const CleanWebpackPlugin = require('clean-webpack-plugin');
+const webpack = require('webpack');
+// 项目提示错误，可能是编译错误，可能是eslint提示错误，希望提示友好一些
+const FriendlyErrorsWebpackPlugin = require('friendly-errors-webpack-plugin');
+// css文件拆分, 从js文件中提取出来
+const MiniCssExtractPlugin = require("mini-css-extract-plugin");
+
+
+module.exports = {
+  mode: 'development',
+  // devtool: 'inline-source-map', // 错误代码调试
+  // 多文件入口
+  // entry: {
+  //   main: './src/index.js',
+  //   header: './src/head.js',
+  // },
+  // 单个入口
+  entry: './src/index.js',
+  output: {
+    filename: '[name].[hash:8].js',
+    path: path.resolve(__dirname, 'dist')
+  },
+  plugins: [
+    // 多文件入口
+    // new HTMLWebpackPlugin({
+    //   // 用于生成的HTML文档的标题
+    //   title: 'Webpack 开发环境配置',
+    //   // webpack 生成模板的路径
+    //   template: './public/index.html',
+    //   chunks:['main'] // 与入口文件对应的模块名
+    // }),
+    // new HTMLWebpackPlugin({
+    //   title: '多文件入口',
+    //   template: path.resolve(__dirname, './public/head.html'),
+    //   chunks:['header'] // 与入口文件对应的模块名
+    // }),
+    // 单个入口
+    new HTMLWebpackPlugin({
+      // 用于生成的HTML文档的标题
+      title: 'Webpack 开发环境配置',
+      // webpack 生成模板的路径
+      template: './public/index.html',
+    }),
+    // 用法：new CleanWebpackPlugin(paths [, {options}])
+    new CleanWebpackPlugin(['dist']),
+    // 添加 NamedModulesPlugin，以便更容易查看要修补(patch)的依赖，由于设置了 mode: 'development'，所以这个插件可以省略
+    // new webpack.NamedModulesPlugin(),
+    // 进行模块热替换
+    new webpack.HotModuleReplacementPlugin(),
+    new FriendlyErrorsWebpackPlugin(),
+    new MiniCssExtractPlugin({
+      filename: "[name].[hash].css",
+      chunkFilename: "[id].css"
+    })
+  ],
+  module: {
+    rules: [
+      {
+        test: /\.css$/,
+        use: [
+          'style-loader',
+          // 还可以给loader添加一些配置
+          {
+            loader: 'css-loader',
+            options: {
+              // 开启sourceMop
+              sourceMap: true
+            }
+          }
+        ]
+      },
+      // 解析图片
+      {
+        test: /\.(png|svg|jpg|gif)$/,
+        use: [
+          'file-loader'
+        ]
+      },
+      // 解析字体
+      {
+        test: /\.(woff|woff2|eot|ttf|otf)$/,
+        use: [
+          {
+            loader: 'url-loader',
+            options: {
+              limit: 10240,
+              fallback: {
+                loader: 'file-loader',
+                options: {
+                  name: 'fonts/[name].[hash:8].[.ext]'
+                }
+              }
+            }
+          }
+        ]
+      },
+      // 解析数据资源
+      {
+        test: /\.(csv|tsv)$/,
+        use: [
+            'csv-loader'
+        ]
+      },
+      {
+        test: /\.xml$/,
+        use: [
+            'xml-loader'
+        ]
+      },
+      {
+        test: /\.md$/,
+        use: [
+            "html-loader",
+            "markdown-loader"
+        ]
+      },
+      {
+        test: /\.less$/,
+        use:['style-loader','css-loader',{
+          loader: 'postcss-loader',
+          options: {
+            plugins: [require('autoprefixer')]
+          }
+        },'less-loader'] // 从右向左解析原则
+      },
+      {
+        test: /\.scss$/,
+        use: [
+          'style-loader',
+        ]
+      },
+      {
+        test: /\.(mp4|webm|ogg|mp3|wav|flac|aac)(\?.*)?$/, //媒体文件
+        use: [
+          {
+            loader: 'url-loader',
+            options: {
+              limit: 10240,
+              fallback: {
+                loader: 'file-loader',
+                options: {
+                  name: 'media/[name].[hash:8][ext]'
+                }
+              }
+            }
+          }
+        ]
+      }
+    ]
+  },
+1.6用babel转义js文件
+（1）安装 npm i -D babel-loader @babel/preset-env @babel/core
+ （2）
+注意 babel-loader与babel-core的版本对应关系
+babel-loader 8.x 对应babel-core 7.x
+babel-loader 7.x 对应babel-core 6.x
+const path = require('path');
+// 查看html显示的内容
+const HTMLWebpackPlugin = require('html-webpack-plugin');
+// 清理dist文件夹里面的js重复文件
+const CleanWebpackPlugin = require('clean-webpack-plugin');
+const webpack = require('webpack');
+// 项目提示错误，可能是编译错误，可能是eslint提示错误，希望提示友好一些
+const FriendlyErrorsWebpackPlugin = require('friendly-errors-webpack-plugin');
+// css文件拆分, 从js文件中提取出来
+const MiniCssExtractPlugin = require("mini-css-extract-plugin");
+
+
+module.exports = {
+  mode: 'development',
+  // devtool: 'inline-source-map', // 错误代码调试
+  // 多文件入口
+  // entry: {
+  //   main: './src/index.js',
+  //   header: './src/head.js',
+  // },
+  // 单个入口
+  entry: './src/index.js',
+  output: {
+    filename: '[name].[hash:8].js',
+    path: path.resolve(__dirname, 'dist')
+  },
+  plugins: [
+    // 多文件入口
+    // new HTMLWebpackPlugin({
+    //   // 用于生成的HTML文档的标题
+    //   title: 'Webpack 开发环境配置',
+    //   // webpack 生成模板的路径
+    //   template: './public/index.html',
+    //   chunks:['main'] // 与入口文件对应的模块名
+    // }),
+    // new HTMLWebpackPlugin({
+    //   title: '多文件入口',
+    //   template: path.resolve(__dirname, './public/head.html'),
+    //   chunks:['header'] // 与入口文件对应的模块名
+    // }),
+    // 单个入口
+    new HTMLWebpackPlugin({
+      // 用于生成的HTML文档的标题
+      title: 'Webpack 开发环境配置',
+      // webpack 生成模板的路径
+      template: './public/index.html',
+    }),
+    // 用法：new CleanWebpackPlugin(paths [, {options}])
+    new CleanWebpackPlugin(['dist']),
+    // 添加 NamedModulesPlugin，以便更容易查看要修补(patch)的依赖，由于设置了 mode: 'development'，所以这个插件可以省略
+    // new webpack.NamedModulesPlugin(),
+    // 进行模块热替换
+    new webpack.HotModuleReplacementPlugin(),
+    new FriendlyErrorsWebpackPlugin(),
+    new MiniCssExtractPlugin({
+      filename: "[name].[hash].css",
+      chunkFilename: "[id].css"
+    })
+  ],
+  module: {
+    rules: [
+      {
+        test: /\.css$/,
+        use: [
+          'style-loader',
+          // 还可以给loader添加一些配置
+          {
+            loader: 'css-loader',
+            options: {
+              // 开启sourceMop
+              sourceMap: true
+            }
+          }
+        ]
+      },
+      // 解析图片
+      {
+        test: /\.(png|svg|jpg|gif)$/,
+        use: [
+          'file-loader'
+        ]
+      },
+      // 解析字体
+      {
+        test: /\.(woff|woff2|eot|ttf|otf)$/,
+        use: [
+          {
+            loader: 'url-loader',
+            options: {
+              limit: 10240,
+              fallback: {
+                loader: 'file-loader',
+                options: {
+                  name: 'fonts/[name].[hash:8].[.ext]'
+                }
+              }
+            }
+          }
+        ]
+      },
+      // 解析数据资源
+      {
+        test: /\.(csv|tsv)$/,
+        use: [
+            'csv-loader'
+        ]
+      },
+      {
+        test: /\.xml$/,
+        use: [
+            'xml-loader'
+        ]
+      },
+      {
+        test: /\.md$/,
+        use: [
+            "html-loader",
+            "markdown-loader"
+        ]
+      },
+      {
+        test: /\.less$/,
+        use:['style-loader','css-loader',{
+          loader: 'postcss-loader',
+          options: {
+            plugins: [require('autoprefixer')]
+          }
+        },'less-loader'] // 从右向左解析原则
+      },
+      {
+        test: /\.scss$/,
+        use: [
+          'style-loader',
+        ]
+      },
+      {
+        test: /\.(mp4|webm|ogg|mp3|wav|flac|aac)(\?.*)?$/, //媒体文件
+        use: [
+          {
+            loader: 'url-loader',
+            options: {
+              limit: 10240,
+              fallback: {
+                loader: 'file-loader',
+                options: {
+                  name: 'media/[name].[hash:8][ext]'
+                }
+              }
+            }
+          }
+        ]
+      },
+      // ES6 ES7语法转义
+      {
+        test: /\.js/,
+        include: path.resolve(__dirname, 'src'),
+        loader: 'babel-loader?cacheDirectory',
+      },
+    ]
+  },
+2.0配置热更新
+（1）安装npm i -D webpack-dev-server
+（2）webpack.config.js配置如下
+const webpack = require('webpack');
+module.exports = {
+  ....
+devServer: {
+    // 必须配置的选项，服务启动的目录，默认为根目录
+    contentBase: './dist',
+    // 使用热加载是时需要设置为true
+    hot: true,
+    /*
+     * 下面为可选配置
+    */
+  //  指定使用一个host， 默认是localhost
+  host: 'localhost',
+  // 端口号
+  port: 8000,
+  // 当使用html5 history API时，任意404响应都可能需要被替代为index.html。通过设置为true进行启用
+  historyApiFallback: {
+    disableDotRule: true
+  },
+  // 出现错误时是否在浏览器上出现遮罩层提示
+  overlay: true,
+  /*
+   * 在dev-server的两种不同模式之间切换
+   * 默认情况下，应用程序启用内联模式inline
+   * 设置为false, 使用iframe模式，它在通知栏下面使用<iframe>标签，包含了关于构建的消息
+  */
+  inline: true,
+/*
+  * 统计信息：枚举类型，可供选项
+  * "errors-only"：只在发生错误时输出
+  * "minimal"：只在发生错误或有新的编译时输出
+  * "none": 没有输出
+  * "normal": 标准输出
+  * "verbose": 全部输出
+*/
+   stats: "errors-only",
+    //  设置接口请求代理，更多proxy配置
+   proxy: {
+    '/api/': {
+        changeOrigin: true,
+        // 目标地址
+        target: 'http://localhost:3000',
+        // 重写路径
+        pathRewrite: {
+            '^/api/': '/'
+        }
+      }
+    }
+  },
+}
+（3）在package.json中配置
+
+webpack5的提升：
+使用持久化缓存提高构建性能；
+使用更好的算法和默认值改进长期缓存（long-term caching）；
+清理内部结构而不引入任何破坏性的变化；
+引入一些breaking changes，以便尽可能长的使用v5版本。
+学习链接： https://juejin.cn/post/6844904031240863758
+         https://juejin.cn/post/6844903769847627789
